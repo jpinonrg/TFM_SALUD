@@ -86,7 +86,6 @@ Definimos los directorios de trabajo:
 ##Cargamos funciones
 source("D:/UOC_MASTER/TFM/Salud/PAC4/src/violin_plot.R")
 source("D:/UOC_MASTER/TFM/Salud/PAC4/src/timeseries_plot.R")
-source("D:/UOC_MASTER/TFM/Salud/PAC4/src/hist_plot.R")
 source("D:/UOC_MASTER/TFM/Salud/PAC4/src/treemap_plot.R")
 ```
 
