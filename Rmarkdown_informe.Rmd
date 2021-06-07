@@ -1,0 +1,832 @@
+---
+title: 'Estado de salud en Europa'
+subtitle: 'Análisis con perspectiva de género'
+author: "Autora: Jesica Piñón Rodríguez"
+date: "Junio 2021"
+output:
+  html_document:
+    code_folding: hide
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: TFM-header.html
+  word_document: default
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=T, echo=T)
+```
+
+**Introducción**
+
+En este documento se presenta el código utilizado y los pasos seguidos para la obtención de los resultados presentados en la memoria del trabajo final de máster. 
+Dicho trabajo realiza un análisis del estado de salud en Europa. El análisis pone especial atención a los indicadores de esperanza de vida y años de vida saludables, lesiones por accidentes, absentismo laboral y salud mental. Los indicadores se analizan poniendo especial interés en las diferencias entre hombres y mujeres para entender el sesgo de género existente en Europa. 
+
+Los datos del estudio se obtienen del conjunto de datos de **Health status** de 
+[Eurostat](https://ec.europa.eu/eurostat/web/health/data/database")
+
+******
+# Recolección de los datos
+******
+El primer paso es instalar los paquetes y cargar las librerías necesarias:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+is.installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+if (!is.installed("ggplot2")){install.packages("ggplot2",repos="http://cran.r-project.org")}
+if (!is.installed("data.table")){install.packages("data.table",repos="http://cran.r-project.org")}
+if (!is.installed("rmarkdown")){install.packages("rmarkdown",repos="http://cran.r-project.org")}
+if (!is.installed("dplyr")){install.packages("dplyr",repos="http://cran.r-project.org")}
+if (!is.installed("forcats")){install.packages("forcats",repos="http://cran.r-project.org")}
+if (!is.installed("viridis")){install.packages("viridis",repos="http://cran.r-project.org")}
+if (!is.installed("treemapify")){install.packages("treemapify",repos="http://cran.r-project.org")}
+if (!is.installed("splitstackshape")){install.packages("splitstackshape",repos="http://cran.r-project.org")}
+if (!is.installed("kableExtra")){install.packages("kableExtra",repos="http://cran.r-project.org")}
+if (!is.installed("hrbrthemes")){install.packages("hrbrthemes",repos="http://cran.r-project.org")}
+if (!is.installed("factoextra")){install.packages("factoextra",repos="http://cran.r-project.org")}
+if (!is.installed("corrplot")){install.packages("corrplot",repos="http://cran.r-project.org")}
+if (!is.installed("directlabels")){install.packages("directlabels",repos="http://cran.r-project.org")}
+if (!is.installed("gridExtra")){install.packages("gridExtra",repos="http://cran.r-project.org")}
+if (!is.installed("ggalt")){install.packages("ggalt",repos="http://cran.r-project.org")}
+
+suppressPackageStartupMessages(library(ggplot2)) 
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(rmarkdown)) 
+suppressPackageStartupMessages(library(dplyr)) 
+suppressPackageStartupMessages(library(forcats)) 
+suppressPackageStartupMessages(library(viridis)) 
+suppressPackageStartupMessages(library(treemapify))
+suppressPackageStartupMessages(library(splitstackshape))
+suppressPackageStartupMessages(library(kableExtra))
+suppressPackageStartupMessages(library(hrbrthemes))
+suppressPackageStartupMessages(library(factoextra))
+suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(directlabels))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(ggalt))
+
+
+print ("Librerías cargadas\n")
+```
+Cargamos las funciones necesarias:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+outplotdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/plots/'
+srcdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/src/HealthStatus/data/'
+```
+
+Definimos los directorios de trabajo:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+##Cargamos funciones
+source("D:/UOC_MASTER/TFM/Salud/PAC4/src/violin_plot.R")
+source("D:/UOC_MASTER/TFM/Salud/PAC4/src/timeseries_plot.R")
+source("D:/UOC_MASTER/TFM/Salud/PAC4/src/hist_plot.R")
+source("D:/UOC_MASTER/TFM/Salud/PAC4/src/treemap_plot.R")
+```
+
+Ejecuto script general de procesamiento de datos
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+#source("D:/UOC_MASTER/TFM/Salud/PAC4/src/01.R", local = knitr::knit_global())
+```
+**Años de vida saludables**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+srcdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/src/HealthStatus/data/'
+hly <- readRDS(paste0(srcdir,"hly_ts.rds"))
+#summary(hly)
+options(knitr.kable.NA = '') 
+#Presentación resumen datos
+kable(summary(hly),digits=2, align='l', caption="Tabla resumen de los datos relativos a los años de vida saludables") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+unique(hly$indic_he)
+```
+
+**Absentismo laboral debido a problemas de salud**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+absw <- readRDS(paste0(srcdir,"absw.rds"))
+#summary(absw)
+kable(summary(absw),digits=2, align='l', caption="Tabla resumen de los datos relativos al absentismo laboral debido a problemas de salud") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+
+**Lesiones por accidentes **
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+ifa <- readRDS(paste0(srcdir,"ifa.rds"))
+#summary(ifa)
+#unit PC_S --> 	Standardised percentage
+kable(summary(ifa),digits=2, align='l', caption="Tabla resumen de los datos relativos a las lesiones por accidentes") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+**Salud y bienestar autopercibidos**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+sph <-readRDS(paste0(srcdir,"sph.rds"))
+kable(summary(sph),digits=2, align='l', caption="Tabla resumen de los datos relativos a la salud y bienestar autopercibidos") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+******
+# Análisis exploratorio de los datos
+******
+
+## Años de vida saludables y esperanza de vida
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+srcdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/src/HealthStatus/data/'
+hly <- readRDS(paste0(srcdir,"hly_ts.rds"))
+
+```
+
+**violin plots**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+p <- violin_plot(hly,"HLY","Años de vida saludables",0,100,'YR') # no es interesante
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"AÑOSVIDASALUDABLE_2004_2019.png"),plot = p, dpi = 300)
+
+p <- violin_plot(hly,"LE","Esperanza de vida",0,100,'YR')
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"ESPERANZAVIDA_2004_2019.png"),plot = p, dpi = 300)
+
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+summary(hly[sex=='F' & indic_he=='LE_0' & !is.na(pais) & as.character(variable) >= 2004]$value)
+summary(hly[sex=='M' & indic_he=='LE_0' & !is.na(pais) & as.character(variable) >= 2004]$value)
+summary(hly[sex=='F' & indic_he=='LE_65' & !is.na(pais) & as.character(variable) >= 2004]$value)
+summary(hly[sex=='M' & indic_he=='LE_65' & !is.na(pais) & as.character(variable) >= 2004]$value)
+```
+
+**Series temporales**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+#2004-2019
+p <- ts_change(hly,'LE_0','Esperanza de vida',2004,2019,'YR','F')
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"TS_esperanzavida_2004_2019_F.png"),plot = p, dpi = 300)
+p <- ts_change(hly,'LE_0','Esperanza de vida',2004,2019,'YR','M')
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"TS_esperanzavida_2004_2019_M.png"),plot = p, dpi = 300)
+```
+
+**AÑOS DE VIDA SALUDABLES Y LA PERCEPCION**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- hly[unit=='YR' & Indicator != 'hlth_hlye_h' & sex !='T']
+temp <- temp[!grep('LE',indic_he)]
+temp <- temp[geo=='EU27_2020']
+#Añadiendo etiquetas
+temp[grep('_0|BIRTH',indic_he),label:='Nacimiento']
+temp[grep('_50',indic_he),label:='A los 50']
+temp[grep('_65',indic_he),label:='A los 65']
+temp[Indicator=='hlth_hlye',Indicator_name:='Años de vida saludables']
+temp[Indicator=='hlth_silc_17',Indicator_name:='Autopercepción']
+# Para poder ordenar las etiquetas
+temp$ind = factor(temp$label, levels=c(unique(temp$label)))
+#Plot
+temp2 <- temp[ind=='Nacimiento']
+p <- ggplot(temp2,aes(x=as.character(variable),y=value,color=sex,group=sex))+geom_point()+facet_wrap(~Indicator_name)+geom_line()+ylab('')+xlab('Años')+theme(axis.text.x = element_text(angle = 60, hjust=1))+scale_color_manual(name = "Sexo",values = c("#FFA500", "#008000"))
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"Evolucion_AñosSaludablesVSAutopercepcion_Nacimiento.png"),plot = p, dpi = 300)
+temp2 <- temp[ind=='A los 50']
+p <- ggplot(temp2,aes(x=as.character(variable),y=value,color=sex,group=sex))+geom_point()+facet_wrap(~Indicator_name)+geom_line()+ylab('Años')+xlab('Evolución')+theme(axis.text.x = element_text(angle = 60, hjust=1))+scale_color_manual(name = "Sexo",values = c("#FFA500", "#008000"))
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"Evolucion_AñosSaludablesVSAutopercepcion_50.png"),plot = p, dpi = 300)
+temp2 <- temp[ind=='A los 65']
+p <- ggplot(temp2,aes(x=as.character(variable),y=value,color=sex,group=sex))+geom_point()+facet_wrap(~Indicator_name)+geom_line()+ylab('Años')+xlab('Evolución')+theme(axis.text.x = element_text(angle = 60, hjust=1))+scale_color_manual(name = "Sexo",values = c("#FFA500", "#008000"))
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"Evolucion_AñosSaludablesVSAutopercepcion_65.png"),plot = p, dpi = 300)
+
+#Por año
+#for (year in unique(temp$variable)){
+year <- '2019'
+  print(year)
+p <- ggplot(data = temp[variable==year], aes(x=factor(Indicator_name), y=value,fill=sex)) + facet_wrap(~ind, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +ggtitle('Años de vida saludables y autopercepción')+theme(axis.text.x = element_text(angle = 60, hjust=1))+labs(y='Años',x='')+theme(plot.title = element_text(hjust = 0.5))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))
+p
+#dev.off()
+#ggsave(paste0(outplotdir,"AñosSaludables_",year,".png"),plot = p, dpi = 300)
+#}
+```
+**Ratio esperanza de vida y años de vida saludables por país**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- hly[unit=='PC' & Indicator=='hlth_hlye' & sex !='T']
+temp <- temp[!is.na(pais)] #por país
+#Añadiendo etiquetas
+temp[grep('_0|BIRTH',indic_he),label:='Nacimiento']
+temp[grep('_50',indic_he),label:='A los 50']
+temp[grep('_65',indic_he),label:='A los 65']
+# Para poder ordenar las etiquetas
+temp$ind = factor(temp$label, levels=c(unique(temp$label)))
+
+p <- ggplot(data = temp, aes(x=as.character(variable),y=value,fill=sex,group=sex,color=sex))+facet_wrap(~pais, scales="free_y") +xlab('')+ylab('')+geom_smooth(aes(group=sex))+scale_color_manual(name = "Sexo",values = c("#FFA500", "#008000"))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+theme(
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank()
+)
+p
+#ggsave(p,filename=paste0(outplotdir,"ComparativaPaisesPCAñosSaludables.png"),width = 10, height = 8)
+```
+
+## Lesiones por accidentes
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+ifa <- readRDS(paste0(srcdir,"ifa.rds"))
+ifa$time <- NULL
+```
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# por sexo y accidente (edad total y nivel total) y toda europa
+p <- treemap_plot(ifa,'hlth_ehis_ac1e','TOTAL','accident','all')
+p
+#ggsave(p,filename=paste0(outplotdir,"Tiposaccidentes.png"),width = 10, height = 10)
+
+```                    
+Al unir con la gravedad de las lesiones, no se observan patrones diferentes
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# por sexo y asistencia médica (edad total y nivel total) y toda europa
+p <- treemap_plot(ifa,'hlth_ehis_ac2e','TOTAL','hlthcare','all')
+p
+#ggsave(p,filename=paste0(outplotdir,"AsistenciaMedica.png"),width = 10, height = 10)
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- ifa[Indicator=='hlth_ehis_ac1e']
+temp <- temp[age !='TOTAL']
+
+for (cat in unique(temp$accident)){
+  print(cat)
+  if (cat=='HOM'){cat2 <- 'domésticos'}
+  if (cat=='HOM_LEIS'){cat2 <- 'domésticos y ocio'}
+  if (cat=='LEIS'){cat2 <- 'de ocio'}
+  if (cat=='RD_TRF'){cat2 <- 'de tráfico'}
+temp2 <- temp[accident==cat & sex!='T' & isced11=='TOTAL' & variable=='EU27_2020']
+#pruebo categorias edad
+temp2 <- temp2[age == 'Y15-19' | age=='Y20-24' | age=='Y25-34' | age=='Y35-44' | age=='Y45-54' | age=='Y55-64' | age=='Y_GE65' | age=='Y_GE75']
+#Orden específico
+temp2$age <- factor(temp2$age, levels=c("Y15-19", "Y20-24", "Y25-34","Y35-44","Y45-54","Y55-64","Y_GE65","Y_GE75"))
+temp2[,freq:=round((value/sum(value))*100,1),by=age]
+p <- ggplot(temp2, 
+       aes(x = age,
+           y = freq,
+           fill = sex)) + geom_bar(stat = "identity")+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+xlab("Grupos de edad")+ ylab("")+
+theme(axis.text.x=element_text(hjust=1,angle=60,size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),legend.text = element_text(size=15),legend.title = element_text(size=15))+
+geom_text(aes(label=paste0(freq," %")),position=position_stack(vjust = 0.5),size=5,fontface = "bold")+ggtitle(paste0("Accidentes ",cat2))
+p
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_",cat2,".png"),width = 10, height = 10)
+}
+
+```
+
+**Análisis por nivel educativo y grado de urbanización**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+##por accidetne segun sexo y nivel educativo
+p <- treemap_plot(ifa,'hlth_ehis_ac1e','isced11','accident','F')
+p <- p + ggtitle('Tipos de accidente según el nivel educativo - Mujeres') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_niveleducativo_mujeres.png"),width = 12, height = 10)
+
+p <- treemap_plot(ifa,'hlth_ehis_ac1e','isced11','accident','M')
+p <- p + ggtitle('Tipos de accidente según el nivel educativo - Hombres') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_niveleducativo_hombres.png"),width = 12, height = 10)
+
+
+# accidente segun sexo y grado urbanismo
+p <- treemap_plot(ifa,'hlth_ehis_ac1u','deg_urb','accident','F')
+p <- p + ggtitle('Tipos de accidente según el grado de urbanismo - Mujeres') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_urbanismo_mujeres.png"),width = 12, height = 10)
+p <- treemap_plot(ifa,'hlth_ehis_ac1u','deg_urb','accident','M')
+p <- p + ggtitle('Tipos de accidente según el grado de urbanismo - Hombres') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_urbanismo_hombres.png"),width = 12, height = 10)
+```  
+
+**Análisis por países, sexo y categoría de accidente**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- ifa[Indicator=='hlth_ehis_ac1e']
+for (cat in unique(temp$accident)){
+   if (cat=='HOM'){cat2 <- 'domésticos'}
+  if (cat=='HOM_LEIS'){cat2 <- 'domésticos y ocio'}
+  if (cat=='LEIS'){cat2 <- 'de ocio'}
+  if (cat=='RD_TRF'){cat2 <- 'de tráfico'}
+temp2 <- temp[accident==cat & sex!='T']
+#todas las edades y niveles
+temp2 <- temp2[isced11 == 'TOTAL'  & age=='TOTAL']
+
+p <- ggplot(temp2[!is.na(pais)], 
+       aes(x = pais,
+           y = value,
+           fill = sex)) + 
+  geom_bar(stat = "identity",
+           position = position_dodge())+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15))+ggtitle(paste0('Proporción de accidentes ',cat2,' por países'))+theme(plot.title = element_text(hjust = 0.5))+xlab('')+ylab('')+labs(fill='Sexo')+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.text.y = element_text(size=15))
+# añadir línea de media europea 
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='M']$value,linetype="dashed", color = '#008000')
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='F']$value,linetype="dashed", color = '#FFA500')
+#ggsave(p,filename=paste0(outplotdir,"Accidentes_PAISES_",cat,".png"),width = 10, height = 10)
+
+}
+```
+
+## Absentismo laboral
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+absw <- readRDS(paste0(srcdir,"absw.rds"))
+absw$time <- NULL
+# Según nivel educativo
+p <- treemap_plot(absw,'hlth_ehis_aw1e','isced11','isced11','all')
+p <- p + ggtitle('Absentismo laboral por problemas de salud') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Absentismo_niveleducativo.png"),width = 12, height = 10)
+
+# Según grado urbanismo
+p <- treemap_plot(absw,'hlth_ehis_aw1u','deg_urb','deg_urb','all')
+p <- p + ggtitle('Absentismo laboral por problemas de salud') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Absentismo_urbanismo.png"),width = 12, height = 10)
+
+```
+
+**Análisis ausencia por países y sexo**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- absw[Indicator=='hlth_ehis_aw1e']
+temp2 <- temp[sex!='T']
+#todas las edades y niveles
+temp2 <- temp2[isced11 == 'TOTAL'  & age=='TOTAL']
+p <- ggplot(temp2[!is.na(pais)], 
+       aes(x = pais,
+           y = value,
+           fill = sex)) + 
+  geom_bar(stat = "identity",
+           position = position_dodge())+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15))+ggtitle('Proporción de absentismo laboral por países')+theme(plot.title = element_text(hjust = 0.5))+xlab('')+ylab('')+labs(fill='Sexo')+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.text.y = element_text(size=15))
+# añadir línea de media europea 
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='M']$value,linetype="dashed", color = '#008000')
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='F']$value,linetype="dashed", color = '#FFA500')
+#ggsave(p,filename=paste0(outplotdir,"Absentismo_PAISES_",cat,".png"),width = 10, height = 10)
+```
+**Nivel de limitación**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- absw[Indicator=='hlth_ehis_aw1d']
+temp <- temp[variable=='EU27_2020' & sex!='T']
+
+#PARA TODAS LAS EDADES
+temp2 <- temp[age=='TOTAL']
+temp2[lev_limit=='NONE',label:='Ninguno']
+temp2[lev_limit=='NONE',id:='a']
+temp2[lev_limit=='MOD',id:='b']
+temp2[lev_limit=='SM_SEV',id:='c']
+temp2[lev_limit=='SEV',id:='d']
+temp2[lev_limit=='MOD',label:='Moderado']
+temp2[lev_limit=='SEV',label:='Severo']
+temp2[lev_limit=='SM_SEV',label:='Algo severo']
+#Orden específico
+temp2$label <- factor(temp2$label, levels=c("Ninguno", "Moderado", "Algo severo","Severo"))
+p <- ggplot(data = temp2, aes(x=label, y=value,fill=sex))+geom_bar(stat='identity',position=position_dodge())+ggtitle('Limitaciones')+theme(plot.title = element_text(hjust = 0.5))+xlab('')+ylab('Proporción (%)')+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15))+ggtitle('Absentismo laboral según nivel de limitación de actividad') +theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.text.y = element_text(size=15),axis.title.x=element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"Abssentismo_Limitaciones.png"),width = 10, height = 10)
+```
+
+## Salud mental
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+sph <-readRDS(paste0(srcdir,"sph.rds"))
+sph <- sph[unit=='PC']
+#Etiquetas
+sph[hlth_pb=='DPR',label:='Síntomas depresivos']
+sph[hlth_pb=='DPR_MJR',label:='Síntomas depresivos severos']
+sph[hlth_pb=='DPR_OTH',label:='Otros síntomas depresivos']
+
+mh1 <- sph[grep('mh1',Indicator)] #current depressive symptons
+mh2 <- sph[grep('mh2',Indicator)] # severity of current depressive symptons
+silc <- sph[grep('silc',Indicator)] # self-perceived health
+```
+**Problemas de salud según nivel educativo  y sexo**
+  
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mh1_subset <- mh1[age=='TOTAL' & sex !='T']
+mh2_subset <- mh2[age=='TOTAL' & sex !='T']
+#nivel educativo
+temp <- mh1_subset[Indicator=='hlth_ehis_mh1e' & isced11!='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+temp2 <- temp2[hlth_pb != 'DPR']
+p <- ggplot(data = temp2, aes(x=factor(isced11), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Nivel educativo')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+scale_y_continuous(limits = c(0,round(max(temp2$value)+1,0)))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_NIVELEDUCATIVO.png"),width = 10, height = 10)
+
+```
+
+**grado urbanismo**
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- mh1_subset[Indicator=='hlth_ehis_mh1u' & deg_urb!='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+temp2 <- temp2[hlth_pb != 'DPR']
+p <- ggplot(data = temp2, aes(x=factor(deg_urb), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Grado de urbanismo')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+scale_y_continuous(limits = c(0,round(max(temp2$value)+1,0)))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_GRADOURBANISMO.png"),width = 10, height = 10)
+
+```
+
+**Nivel de ingresos**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+#nivel de ingresos
+temp <- mh1_subset[Indicator=='hlth_ehis_mh1i' & quantile !='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+temp2 <- temp2[hlth_pb != 'DPR']
+p <- ggplot(data = temp2, aes(x=factor(quantile), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Quintil de ingresos')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+scale_y_continuous(limits = c(0,round(max(temp2$value)+1,0)))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_INGRESOS.png"),width = 10, height = 10)
+
+```
+**Severity of current depressive symptoms**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+#percepcion propia
+mh2_subset[levels=='MOD',label:='Moderado']
+mh2_subset[levels=='NONE_MIN',label:='Nada-mínimo']
+mh2_subset[levels=='MILD',label:='Moderado']
+#mh2_subset[levels=='D_MODS_SEV',label:='Moderate']
+mh2_subset[levels=='MODS',label:='Moderado-severo']
+mh2_subset[levels=='SEV',label:='Severo']
+mh2_subset <- mh2_subset[!is.na(label)]
+temp <- mh2_subset[Indicator=='hlth_ehis_mh2e' & isced11!='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+
+p <- ggplot(data = temp2, aes(x=factor(isced11), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Nivel educativo')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_SEVERIDAD_EDUCATIVO.png"),width = 10, height = 10)
+
+#urbanismo
+temp <- mh2_subset[Indicator=='hlth_ehis_mh2u' & deg_urb!='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+
+p <- ggplot(data = temp2, aes(x=factor(deg_urb), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Grado de urbanismo')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_SEVERIDAD_URBANISMO.png"),width = 10, height = 10)
+
+#nivel ingresos
+temp <- mh2_subset[Indicator=='hlth_ehis_mh2i' & quantile!='TOTAL']
+temp2 <- temp[variable=='EU27_2020']
+
+p <- ggplot(data = temp2, aes(x=factor(quantile), y=value,fill=sex)) + facet_wrap(~label, scales="free_y")+geom_bar(stat='identity',position=position_dodge()) +xlab('Quintil de ingresos')+ylab('Porcentaje (%)')+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.title.x=element_text(size=15),axis.title.y=element_text(size=15),axis.text.y=element_text(size=15))+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+ theme(strip.text = element_text(size=15))
+p
+#ggsave(p,filename=paste0(outplotdir,"SALUDMENTAL_SEVERIDAD_INGRESOS.png"),width = 10, height = 10)
+```
+**Por países**
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- sph[Indicator=='hlth_ehis_mh1b']
+temp2 <- temp[sex!='T']
+#todas las edades - síntomas depresión de todo tipo
+temp2 <- temp2[age=='TOTAL' & hlth_pb =='DPR']
+p <- ggplot(temp2[!is.na(pais)], 
+       aes(x = pais,
+           y = value,
+           fill = sex)) + 
+  geom_bar(stat = "identity",
+           position = position_dodge())+theme(axis.text.x = element_text(angle = 60, hjust=1,size=15))+ggtitle('Proporción de síntomas depresivos por países')+theme(plot.title = element_text(hjust = 0.5))+xlab('')+ylab('')+labs(fill='Sexo')+scale_fill_manual(name = "Sexo",values = c("#FFA500", "#008000"))+theme(plot.title = element_text(size = 20, face = "bold"),legend.text = element_text(size=15),legend.title = element_text(size=15),axis.text.y = element_text(size=15))
+# añadir línea de media europea 
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='M' & c_birth=='NAT']$value,linetype="dashed", color = '#008000')
+p <- p + geom_hline(yintercept=temp2[variable=='EU27_2020' & sex=='F' & c_birth=='NAT']$value,linetype="dashed", color = '#FFA500')
+#ggsave(p,filename=paste0(outplotdir,"Depresion_PAISES.png"),width = 10, height = 10)
+```
+
+# Identificación de patrones y relación entre indicadores
+
+## APVP
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+#Años potenciales de vida perdidos (APVP) = Esperanza de vida – Edad promedio de los trabajadores fallecidos en accidente de [[trabajo]]
+ifa <- readRDS(paste0(srcdir,"ifa.rds"))
+hly <- readRDS(paste0(srcdir,"hly.rds"))
+##JUGAR TB CON EL INDICADOR
+hly <- hly[indic_he=='LE_0' & variable=='2014' & sex!='T' & geo=='EU27_2020']
+#hly <- hly[indic_he=='LE_65' & variable=='2014' & sex!='T' & geo=='EU27_2020']
+#indicator por urbanismo o nivel educativo
+ifa <- ifa[Indicator=='hlth_ehis_ac1e'] #hlth_ehis_ac1u hlth_ehis_ac1e
+ifa <- ifa[age == 'Y15-19' | age=='Y20-24' | age=='Y25-34' | age=='Y35-44' | age=='Y45-54' | age=='Y55-64' | age=='Y_GE65' | age=='Y_GE75']
+ifa[age=='Y15-19',age2:=17]
+ifa[age=='Y20-24',age2:=22]
+ifa[age=='Y25-34',age2:=29.5]
+ifa[age=='Y35-44',age2:=39.5]
+ifa[age=='Y45-54',age2:=49.5]
+ifa[age=='Y55-64',age2:=59.5]
+ifa[age=='Y_GE65',age2:=65]
+ifa[age=='Y_GE75',age2:=75]
+ifa <- ifa[variable=='EU27_2020']
+
+# por sexo--media ponderada de valor porcentaje de tipo de accidente y años--saco media edad accidente tipo; mantengo grado de urbanizacion
+#POR INDICADOR
+#ifa[!is.na(value),age.w:=weighted.mean(age2,value),by=c('sex','accident','deg_urb')]
+ifa[!is.na(value),age.w:=weighted.mean(age2,value),by=c('sex','accident','isced11')]
+hly_subset <- subset(hly,select=c('sex','value'))
+temp <- merge(ifa,hly_subset,by='sex')
+#POR INDICADOR
+#temp[,APVP:=value.y-age.w,by=c('sex','accident','deg_urb')]
+temp[,APVP:=value.y-age.w,by=c('sex','accident','isced11')]
+
+#PLOTS APVP -->
+library(fmsb)
+#por categoria de urbanismo y nivel educativo
+#for (cat in unique(temp$deg_urb)){
+for (cat in unique(temp$isced11)){
+  print(cat)
+  #POR INDICADOR
+temp2 <- temp[isced11==cat]
+temp2 <- temp2[!is.na(APVP)]
+temp2 <- subset(temp2,select=c('sex','accident','APVP'))
+temp2 <- unique(temp2,by=c('sex','accident'))
+library(reshape2)
+temp2 <- dcast(temp2,sex~accident)
+# To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
+temp2 <- rbind(rep(max(temp2[,2:5]),4) , rep(min(temp2[,2:5]),5) , temp2)
+temp2$sex[1:2] <- c('1','2')
+
+colors_border=c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9))
+colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4))
+setnames(temp2,"sex","APVP")
+#png(paste0(outplotdir,"RadarPlot_APVP_",cat,"_0.png"))
+radarchart(temp2, axistype=1 , 
+            #custom polygon
+            pcol=colors_border , pfcol=colors_in , plwd=4 , plty=1,
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+            #custom labels
+            vlcex=0.8 
+)
+legend(x=0.8, y=1, legend = temp2[-c(1,2),]$APVP, bty = "n", pch=20 , col=colors_in , text.col = "grey", cex=1.2, pt.cex=2)
+#dev.off()
+}
+```
+
+
+## Evolución temporal de los indicadores de esperanza de vida por países
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+hly <- readRDS(paste0(srcdir,"hly_ts.rds"))
+temp <- hly[Indicator!='hlth_silc_17']
+#sexo <- 'M'
+# sexo total desd 2004 - 2019
+sexo <- 'T'
+temp <- temp[sex==sexo & unit=='YR']
+
+# by indicador
+temp <- temp[!grep('EU',geo)]
+temp <- temp[!grep('EA',geo)]
+paises <- fread('pib_capita.txt',header=F,encoding = 'UTF-8')
+setnames(paises,'V1','geo')
+paises$ID <- 1:nrow(paises)
+paises$V2 <- paises$V3 <- NULL
+#group by countries
+temp <- merge(temp,paises,by='geo')
+
+##solo considero del 2004 al 2019
+temp <- temp[as.character(variable) >= '2004']
+#for (cat in unique(temp$indic_he)){
+#  print(cat)
+cat <- 'HLY_65'
+cat2 <- 'Años de vida saludables a partir de los 65 años'
+p <- ggplot(temp[indic_he==cat & ID <=10],aes(x=as.character(variable),y=value,group=geo,color=geo))+geom_line()+geom_point()+ylab('Años')+xlab('')+ggtitle(cat2) +theme(axis.text.x = element_text(angle = 60, hjust=1))+theme(plot.title = element_text(hjust = 0.5))+  geom_dl(aes(label = pais), method =list("angled.boxes",cex=0.8))+theme(legend.position = "none")
+p
+ggsave(p,filename=paste0(outplotdir,"Evolucionpaises_",cat,"_0_10_",sexo,".png"),width = 10, height = 8)
+p <- ggplot(temp[indic_he==cat & ID >10 & ID <= 20],aes(x=as.character(variable),y=value,group=geo,color=geo))+geom_line()+geom_point()+ylab('Años')+xlab('')+ggtitle(cat2) +theme(axis.text.x = element_text(angle = 60, hjust=1))+theme(plot.title = element_text(hjust = 0.5))+  geom_dl(aes(label = pais), method =list("angled.boxes",cex=0.8))+theme(legend.position = "none")
+p
+ggsave(p,filename=paste0(outplotdir,"Evolucionpaises_",cat,"_10_20_",sexo,".png"),width = 10, height = 8)
+p <- ggplot(temp[indic_he==cat & ID >20],aes(x=as.character(variable),y=value,group=geo,color=geo))+geom_line()+geom_point()+ylab('Años')+xlab('')+ggtitle(cat2) +theme(axis.text.x = element_text(angle = 60, hjust=1))+theme(plot.title = element_text(hjust = 0.5))+  geom_dl(aes(label = pais), method =list("angled.boxes",cex=0.8))+theme(legend.position = "none")
+p
+ggsave(p,filename=paste0(outplotdir,"Evolucionpaises_",cat,"_20_31_",sexo,".png"),width = 10, height = 8)
+#}
+```
+Se analizan en detalle Grecia, Irlanda, Portugal y España.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+temp <- hly[Indicator!='hlth_silc_17']
+temp <- temp[unit=='YR']
+# by indicador
+temp <- temp[!grep('EU',geo)]
+temp <- temp[!grep('EA',geo)]
+paises <- fread('pib_capita.txt',header=F,encoding = 'UTF-8')
+setnames(paises,'V1','geo')
+paises$ID <- 1:nrow(paises)
+paises$V2 <- paises$V3 <- NULL
+#group by countries
+temp <- merge(temp,paises,by='geo')
+
+#paises afectados
+temp <- temp[pais=='Grecia' | pais=='España' | pais=='Portugal']
+#temp <- temp[Indicator=='hlth_hlye']
+
+#sexo e indicador
+temp2 <- temp[sex!='T' & indic_he=='HLY_65']
+temp2 <- temp2[as.character(variable) >= '2004']
+p <- ggplot(temp2, 
+       aes(x = as.character(variable),
+           y = value,
+           fill = pais)) + geom_point(aes(color=pais))+geom_line(aes(group=pais,color=pais)) +theme(axis.text.x = element_text(angle = 60, hjust=1))+ggtitle('Evolución años de vida saludables desde los 65')+theme(plot.title = element_text(hjust = 0.5))+facet_wrap(~sex)+xlab('')+ylab('Años')
+p
+#ggsave(p,filename=paste0(outplotdir,"Evolucionpaisescrisis_HLY_65_bysexo.png"),width = 10, height = 8)
+
+```
+
+## Agrupamiento por países
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+##############################
+# Clustering analysis
+##########################
+## leer datos PIB per capita en PPS
+pib <- fread('pib_data.csv')
+pib <- pib[ , apply(pib, 2, function(x) !any(is.na(x))),with=F]
+pib2 <- subset(pib,select=c(1,13))
+setnames(pib2,"V1","variable")
+
+# Juntamos datos 
+srcdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/src/HealthStatus/data/'
+ifa <- readRDS(paste0(srcdir,"ifa.rds"))
+# Seleccionamos datos de interés
+ifa_subset <- ifa[Indicator=='hlth_ehis_ac1e']
+ifa_subset <- ifa_subset[sex=='T' & age=='TOTAL' & isced11=='TOTAL' & unit=='PC']
+# por accidente
+ifa_subset1 <- ifa_subset[accident=='HOM']
+ifa_subset1 <- subset(ifa_subset1,select=c('variable','value'))
+ifa_subset2 <- ifa_subset[accident=='LEIS']
+ifa_subset2 <- subset(ifa_subset2,select=c('variable','value'))
+ifa_subset3 <- ifa_subset[accident=='RD_TRF']
+ifa_subset3 <- subset(ifa_subset3,select=c('variable','value'))
+setnames(ifa_subset1,"value","HOM")
+setnames(ifa_subset2,"value","LEIS")
+setnames(ifa_subset3,"value","RD_TRF")
+
+hly <- readRDS(paste0(srcdir,"hly.rds"))
+hly_subset1 <- hly[Indicator=='hlth_hlye' & sex=='T' & unit=='YR' & variable=='2019' & indic_he=='LE_0']
+hly_subset2 <- hly[Indicator=='hlth_hlye' & sex=='T' & unit=='YR' & variable=='2019' & indic_he=='HLY_0']
+# Missing values
+missing_pais <- hly_subset1[is.na(value)]$geo 
+for (c in missing_pais){
+  hly_subset1[geo==c]$value <- hly[variable=='2018' & indic_he=='LE_0' &Indicator=='hlth_hlye' & sex=='T' & unit=='YR' & geo ==c]$value
+}
+missing_pais <- hly_subset2[is.na(value)]$geo 
+for (c in missing_pais){
+  hly_subset2[geo==c]$value <- hly[variable=='2018' & indic_he=='HLY_0' &Indicator=='hlth_hlye' & sex=='T' & unit=='YR' & geo ==c]$value
+}
+
+hly_subset1 <- subset(hly_subset1,select=c('geo','value'))
+hly_subset2 <- subset(hly_subset2,select=c('geo','value'))
+setnames(hly_subset1,c("geo","value"),c("variable","LE_0"))
+setnames(hly_subset2,c("geo","value"),c("variable","HLY_0"))
+
+absw <- readRDS(paste0(srcdir,"absw.rds"))
+absw_subset <- absw[sex=='T' & age=='TOTAL' & isced11=='TOTAL' & unit=='PC']
+eu_absw <- absw_subset[variable=='EU27_2020']$value
+# Asociamos la media europea al valor missing de Irlanda
+#absw_subset[is.na(value)]$value <- absw_subset[variable=='EU27_2020']$value
+absw_subset <- subset(absw_subset,select=c('variable','value'))
+setnames(absw_subset,"value","absw")
+
+sph <- readRDS(paste0(srcdir,"sph.rds"))
+sph_subset <- sph[sex=='T' & age=='TOTAL' & isced11=='TOTAL' & unit=='PC' & Indicator=='hlth_ehis_mh1e' & hlth_pb=='DPR']
+# guardamos valor media europea
+eu_sph <- sph_subset[variable=='EU27_2020']$value
+sph_subset <- subset(sph_subset,select=c('variable','value'))
+setnames(sph_subset,"value","sph")
+
+#*************************
+# Juntamos la información
+#*************************
+temp <- Reduce(function(x, y) merge(x, y, all=TRUE,by='variable'), list(hly_subset1, hly_subset2, ifa_subset1,ifa_subset2,ifa_subset3,absw_subset,sph_subset))
+temp <- merge(temp,pib2,by="variable")
+setnames(temp,"V24","PIB")
+temp <- temp[variable != 'TR'] # omitimos turquia
+# missing
+temp[is.na(absw)]$absw <- eu_absw
+temp[is.na(sph)]$sph <- eu_sph
+
+
+#*************************
+# Proceso clustering
+#*************************
+#escalamos
+datos <- as.data.frame(temp)
+rownames(datos) <- datos$variable
+datos <- datos[-1]
+b <- scale(datos)
+
+#######KMEANS
+mat_dist <- dist(x = b, method = "euclidean")
+p <- fviz_nbclust(x = b, FUNcluster = kmeans, method = "wss", k.max = 15, 
+             diss = get_dist(b, method = "euclidean"), nstart = 50)+ ggtitle('Elbow método')+ylab('Suma de cuadrados entre grupos')+xlab('Número de clusters')+ theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+p
+#ggsave(p,filename=paste0(outplotdir,"kmeans_euclidean.png"),width = 10, height = 10)
+
+p <- fviz_nbclust(x = b, FUNcluster = kmeans, method = "silhouette", k.max = 15) +
+  labs(title = "Número óptimo de clusters")+ylab('Valor de la silueta')+xlab('Número de clusters')  +
+  theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+p
+#ggsave(p,filename=paste0(outplotdir,"kmeans_silhouette.png"),width = 10, height = 10)
+
+# otro metodo
+set.seed(123)
+library(cluster)
+gap_stat <- clusGap(x = b, FUN = kmeans, K.max = 15, nstart = 25, B = 50 )
+
+# Print the result
+print(gap_stat, method = "firstmax")
+p <- fviz_gap_stat(gap_stat)+xlab('Número de clusters')+ ggtitle("Número óptimo de clusters")+ylab('Gap (k)')+
+  theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+p
+#ggsave(p,filename=paste0(outplotdir,"kmeans_clusgap.png"),width = 10, height = 10)
+
+set.seed(125)
+# probamos kmeans para diferentes números de cluster primero
+k2 <- kmeans(b, centers = 2, nstart = 25)
+k3 <- kmeans(b, centers = 3, nstart = 25)
+k4 <- kmeans(b, centers = 4, nstart = 25)
+k5 <- kmeans(b, centers = 5, nstart = 25)
+
+p1 <- fviz_cluster(k2, geom = "point", data = b)+
+  ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point", data = b)+
+  ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point", data = b)+
+  ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point", data = b)+
+  ggtitle("k = 5")
+
+library(gridExtra)
+p <- grid.arrange(p1,p2,p3,p4, nrow = 2)
+p
+#ggsave(p,filename=paste0(outplotdir,"Cluster_varios.png"),width = 10, height = 10)
+
+##K=3
+km_clusters <- kmeans(x = b, centers = 3, nstart = 50)
+km_clusters
+datos$grupo <- as.factor(km_clusters$cluster)
+
+p <- fviz_cluster(object = km_clusters, data = b, show.clust.cent = TRUE,
+             ellipse.type = "euclid", star.plot = TRUE, repel = TRUE) +
+  labs(title = "Resultados clustering K-means") +
+  theme_bw() +
+  theme(legend.position = "none")
+p
+#ggsave(p,filename=paste0(outplotdir,"Cluster_1.png"),width = 10, height = 10)
+
+p <- fviz_cluster(km_clusters, data = b, ellipse.type = "convex")
+p
+#ggsave(p,filename=paste0(outplotdir,"Cluster_2.png"),width = 10, height = 10)
+(km_clusters$betweens/km_clusters$totss)*100
+
+
+#Relaciones entre variables
+p <- ggplot(datos, aes(x = HOM, y = PIB, color = grupo, shape = grupo))+
+  geom_point(size=5)+xlab('Porcentaje lesiones por accidentes domésticos')+
+  geom_smooth(se = FALSE)+theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+
+ggsave(p,filename=paste0(outplotdir,"CLUSTER_HOM.png"),width = 10, height = 10)
+p <- ggplot(datos, aes(x = LEIS, y = PIB, color = grupo, shape = grupo))+
+  geom_point(size=5)+xlab('Porcentaje lesiones por accidentes domésticos')+
+  geom_smooth(se = FALSE)+theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+ggsave(p,filename=paste0(outplotdir,"CLUSTER_LEIS.png"),width = 10, height = 10)
+
+                             
+                                
+```
+
+## Impacto COVID
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+##############
+# covid
+##############
+covid <- fread('covid_sex.csv')
+setnames(covid,"Country code","geo")
+srcdir <- 'D:/UOC_MASTER/TFM/Salud/PAC4/src/HealthStatus/data/'
+paises <- readRDS(paste0(srcdir,"paises.rds"))
+covid <- merge(covid, paises, all.y=T,by='geo')
+covid$Country <- NULL
+# Mezclamos con los grupos de paises y sus indicadores totales
+datos$geo <- rownames(datos)
+datos <- as.data.table(datos)
+datos <- merge(covid, datos, all.y=T,by='geo')
+p <- ggplot(datos, aes(x = Proportion_m_f , y = PIB, color = grupo, shape = grupo))+
+  geom_point(size=5) +xlab('Ratio muertes Hombres/Mujeres')+
+  theme(axis.text.x=element_text(size=20),axis.text.y=element_text(size=20),plot.title = element_text(hjust = 0.5,size=25),axis.title.x = element_text(size=20),axis.title.y = element_text(size=20))
+p
+#ggsave(p,filename=paste0(outplotdir,"ratioMuertesSexo.png"),width = 10, height = 10)
+```
+
+
+
